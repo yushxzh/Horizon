@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Literal, Optional
 from urllib.parse import unquote_plus, urlsplit
+from zoneinfo import ZoneInfo
 import httpx
 from rich.console import Console
 
@@ -45,6 +46,14 @@ _TRACKING_QUERY_PARAMETERS = {
     "twclid",
     "vero_id",
 }
+
+_SUMMARY_TIMEZONE = ZoneInfo("Asia/Shanghai")
+
+
+def _summary_date(now: Optional[datetime] = None) -> str:
+    """返回个人简报所使用的北京时间日期。"""
+    current = now or datetime.now(timezone.utc)
+    return current.astimezone(_SUMMARY_TIMEZONE).strftime("%Y-%m-%d")
 
 
 def _deduplication_url_key(url: str) -> tuple[str, str, str, str, Optional[int], str, str]:
@@ -254,7 +263,7 @@ class HorizonOrchestrator:
             await self._enrich_important_items(important_items)
 
             # 7. Generate and save daily summaries for each configured language
-            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            today = _summary_date()
             for lang in self.config.ai.languages:
                 summarizer = DailySummarizer()
                 summary = await summarizer.generate_summary(important_items, today, len(all_items), language=lang)

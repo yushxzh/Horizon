@@ -3,7 +3,10 @@ name: Deploy Docs
 on:
   push:
     branches: [main]
-    paths: ['docs/**']
+    paths:
+      - "docs/**"
+      - "CONTEXT.md"
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -14,10 +17,10 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
-      - name: Checkout code
+      - name: 检出代码
         uses: actions/checkout@v6
 
-      - name: Deploy to GitHub Pages
+      - name: 部署到 GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
