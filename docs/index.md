@@ -7,7 +7,7 @@ title: 每日资讯简报
 
 本页面每天汇总最近 24 小时内值得关注的 AI / LLM、软件工程、开源工具、安全和开发者产品动态。内容来自 Reddit、X、Hacker News、RSS 与 GitHub Release，每期最多保留 20 条。
 
-{% assign zh_posts = site.posts | where: "lang", "zh" %}
+{% assign zh_posts = site.posts | where: "lang", "zh" | where: "edition", "personal" %}
 {% assign latest_zh = zh_posts | first %}
 
 {% if latest_zh %}

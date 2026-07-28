@@ -289,6 +289,7 @@ class HorizonOrchestrator:
                         f"title: \"Horizon Summary: {today} ({lang.upper()})\"\n"
                         f"date: {today}\n"
                         f"lang: {lang}\n"
+                        "edition: personal\n"
                         "---\n\n"
                     )
 

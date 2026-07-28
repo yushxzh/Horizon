@@ -1,4 +1,4 @@
-"""Twitter scraper using Apify altimis/scweet actor."""
+"""Twitter scraper using an Apify actor."""
 
 import asyncio
 import logging
@@ -21,7 +21,7 @@ _MAX_WAIT = 180
 
 
 class TwitterScraper(BaseScraper):
-    """Fetch tweets via the Apify altimis/scweet actor."""
+    """Fetch tweets via the configured Apify actor."""
 
     def __init__(self, config: TwitterConfig, http_client: httpx.AsyncClient):
         super().__init__(config, http_client)
@@ -68,12 +68,19 @@ class TwitterScraper(BaseScraper):
     async def _start_run(
         self, token: str, users: List[str]
     ) -> tuple[Optional[str], Optional[str]]:
-        payload = {
-            "source_mode": "profiles",
-            "profile_urls": users,
-            "search_sort": "Latest",
-            "max_items": max(100, self.config.fetch_limit),
-        }
+        if self.config.actor_id == "automation-lab~twitter-scraper":
+            payload = {
+                "mode": "user-tweets",
+                "usernames": users,
+                "maxResults": max(1, self.config.fetch_limit),
+            }
+        else:
+            payload = {
+                "source_mode": "profiles",
+                "profile_urls": users,
+                "search_sort": "Latest",
+                "max_items": max(100, self.config.fetch_limit),
+            }
         url = f"{_APIFY_BASE}/acts/{self.config.actor_id}/runs?token={token}"
         try:
             resp = await self.client.post(url, json=payload, timeout=30.0)
@@ -226,7 +233,7 @@ class TwitterScraper(BaseScraper):
 
     def _parse_item(self, item: dict, since: datetime) -> Optional[ContentItem]:
         try:
-            created_at_str = item.get("created_at")
+            created_at_str = item.get("created_at") or item.get("createdAt")
             if not created_at_str:
                 return None
 
@@ -256,22 +263,30 @@ class TwitterScraper(BaseScraper):
             )
             conversation_id = str(
                 item.get("conversation_id")
+                or item.get("conversationId")
                 or item.get("tweet", {}).get("conversation_id")
                 or numeric_id
             )
 
-            user = item.get("user") or {}
+            user = item.get("user") or item.get("author") or {}
             screen_name = (
                 user.get("screen_name")
                 or user.get("username")
+                or user.get("userName")
                 or user.get("handle")
+                or item.get("authorUsername")
                 or item.get("handle")
                 or item.get("username")
                 or "unknown"
             )
             author = user.get("name") or screen_name
 
-            text = item.get("full_text") or item.get("text") or ""
+            text = (
+                item.get("full_text")
+                or item.get("fullText")
+                or item.get("text")
+                or ""
+            )
             if not text:
                 return None
             text = unescape(text)
@@ -299,13 +314,23 @@ class TwitterScraper(BaseScraper):
                 metadata={
                     "tweet_id": numeric_id,
                     "conversation_id": conversation_id,
-                    "favorite_count": item.get("favorite_count", 0),
-                    "retweet_count": item.get("retweet_count", 0),
-                    "reply_count": item.get("reply_count", 0),
-                    "view_count": item.get("view_count"),
-                    "is_reply": item.get("is_reply", False),
-                    "in_reply_to_status_id": item.get("in_reply_to_status_id"),
-                    "in_reply_to_screen_name": item.get("in_reply_to_screen_name"),
+                    "favorite_count": item.get(
+                        "favorite_count", item.get("likeCount", 0)
+                    ),
+                    "retweet_count": item.get(
+                        "retweet_count", item.get("retweetCount", 0)
+                    ),
+                    "reply_count": item.get(
+                        "reply_count", item.get("replyCount", 0)
+                    ),
+                    "view_count": item.get("view_count", item.get("viewCount")),
+                    "is_reply": item.get("is_reply", item.get("isReply", False)),
+                    "in_reply_to_status_id": item.get(
+                        "in_reply_to_status_id", item.get("inReplyToStatusId")
+                    ),
+                    "in_reply_to_screen_name": item.get(
+                        "in_reply_to_screen_name", item.get("inReplyToUsername")
+                    ),
                     "category": self.config.category,
                 },
             )

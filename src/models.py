@@ -258,7 +258,7 @@ class TwitterConfig(BaseModel):
     """Twitter source configuration.
 
     Two modes are supported:
-    - "apify": Use Apify scweet actor (requires APIFY_TOKEN, more reliable)
+    - "apify": Use an Apify Twitter actor (requires APIFY_TOKEN)
     - "playwright": Use Playwright + browser cookies (free, no token needed)
     """
 
@@ -273,7 +273,7 @@ class TwitterConfig(BaseModel):
     reply_min_likes: int = 0
     # Apify settings (used when mode == "apify")
     apify_token_env: str = "APIFY_TOKEN"
-    actor_id: str = "altimis~scweet"
+    actor_id: str = "automation-lab~twitter-scraper"
     # Playwright settings (used when mode == "playwright")
     cookie_dir: str = "data"
     cookie_file_pattern: str = "x_cookies_*.json"

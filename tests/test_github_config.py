@@ -26,6 +26,8 @@ def test_github_config_matches_personal_digest_contract() -> None:
     assert config.sources.twitter is not None
     assert config.sources.twitter.mode == "apify"
     assert config.sources.twitter.apify_token_env == "APIFY_TOKEN"
+    assert config.sources.twitter.actor_id == "automation-lab~twitter-scraper"
+    assert config.sources.twitter.fetch_limit == 4
     assert config.sources.twitter.fetch_reply_text is False
     assert config.sources.telegram.enabled is False
     assert config.webhook is None

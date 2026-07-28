@@ -211,10 +211,11 @@
         "mitchellh",
         "github"
       ],
-      "fetch_limit": 20,
+      "fetch_limit": 4,
       "category": "developer-pulse",
       "fetch_reply_text": false,
-      "apify_token_env": "APIFY_TOKEN"
+      "apify_token_env": "APIFY_TOKEN",
+      "actor_id": "automation-lab~twitter-scraper"
     },
     "telegram": {
       "enabled": false,

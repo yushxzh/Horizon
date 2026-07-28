@@ -1,6 +1,7 @@
 """Tests for TwitterScraper."""
 
 import asyncio
+import json
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -132,6 +133,59 @@ def test_successful_fetch_returns_items(monkeypatch):
     assert len(result) == 2
     assert result[0].source_type.value == "twitter"
     assert result[0].metadata["favorite_count"] == 10
+
+
+def test_automation_lab_actor_payload_and_camel_case_output(monkeypatch):
+    monkeypatch.setenv("APIFY_TOKEN", "test_token")
+    since = datetime.now(timezone.utc) - timedelta(hours=1)
+    now = datetime.now(timezone.utc).strftime("%a %b %d %H:%M:%S +0000 %Y")
+    seen_payload = {}
+    tweets = [
+        {
+            "id": "42",
+            "url": "https://x.com/karpathy/status/42",
+            "text": "A current tweet",
+            "createdAt": now,
+            "likeCount": 99,
+            "retweetCount": 7,
+            "replyCount": 3,
+            "viewCount": 1000,
+            "conversationId": "42",
+            "authorUsername": "karpathy",
+        }
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "/runs" in request.url.path and request.method == "POST":
+            seen_payload.update(json.loads(request.content))
+            return httpx.Response(200, json=_run_resp())
+        if "/actor-runs/" in request.url.path:
+            return httpx.Response(200, json=_status_resp())
+        if "/datasets/" in request.url.path:
+            return httpx.Response(200, json=tweets)
+        raise AssertionError(f"Unexpected: {request.url}")
+
+    transport = httpx.MockTransport(handler)
+    client = httpx.AsyncClient(transport=transport)
+    config = _make_config(
+        actor_id="automation-lab~twitter-scraper",
+        users=["karpathy", "OpenAI"],
+        fetch_limit=4,
+    )
+    result = asyncio.run(TwitterScraper(config, client).fetch(since))
+    asyncio.run(client.aclose())
+
+    assert seen_payload == {
+        "mode": "user-tweets",
+        "usernames": ["karpathy", "OpenAI"],
+        "maxResults": 4,
+    }
+    assert len(result) == 1
+    assert result[0].author == "karpathy"
+    assert result[0].metadata["favorite_count"] == 99
+    assert result[0].metadata["retweet_count"] == 7
+    assert result[0].metadata["reply_count"] == 3
+    assert result[0].metadata["view_count"] == 1000
 
 
 def test_metadata_keys_aligned_for_analyzer(monkeypatch):
@@ -415,6 +469,5 @@ def test_fetch_replies_no_conversation_id_returns_empty(monkeypatch):
     result = asyncio.run(scraper.fetch_replies_for_item(item))
     asyncio.run(client.aclose())
     assert result == []
-
 
 
