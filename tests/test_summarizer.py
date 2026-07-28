@@ -124,6 +124,24 @@ def test_generate_summary_zh_uses_localized_selection_header_and_numeric_date():
     assert "Apr 25, 08:00" not in result
 
 
+def test_generate_summary_zh_preserves_original_title_and_link():
+    summarizer = DailySummarizer()
+    item = _make_item(1)
+    item.metadata["title_zh"] = "重要资讯一"
+
+    result = _run_async(
+        summarizer.generate_summary(
+            [item],
+            date="2026-04-25",
+            total_fetched=1,
+            language="zh",
+        )
+    )
+
+    assert "## [重要资讯一](https://example.com/items/1)" in result
+    assert "**原标题**: [Important Item 1](https://example.com/items/1)" in result
+
+
 def test_generate_empty_summary_zh_uses_localized_analyzed_line():
     summarizer = DailySummarizer()
 

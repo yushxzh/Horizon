@@ -69,6 +69,7 @@ LABELS = {
     "zh": {
         "header": "Horizon 每日速递",
         "source": "来源",
+        "original_title": "原标题",
         "background": "背景",
         "discussion": "社区讨论",
         "references": "参考链接",
@@ -194,6 +195,7 @@ class DailySummarizer:
         """Format a single ContentItem into Markdown."""
         _title = item.metadata.get(f"title_{language}") or item.title
         title = _escape_markdown(_title)
+        original_title = _escape_markdown(item.title)
         raw_url = str(item.url)
         url = _safe_url(raw_url)
         score = item.ai_score or "?"
@@ -218,6 +220,7 @@ class DailySummarizer:
 
         if language == "zh":
             title = _pangu(title)
+            original_title = _pangu(original_title)
             summary = _pangu(summary)
             background = _pangu(background)
             discussion = _pangu(discussion)
@@ -253,11 +256,15 @@ class DailySummarizer:
         lines = [
             f'<a id="item-{index}"></a>',
             f"## {title_link} \u2b50\ufe0f {score}/10",  # ⭐️
-            "",
-            summary,
-            "",
-            source_line,
         ]
+
+        if language == "zh" and str(_title).strip() != str(item.title).strip():
+            original_title_link = (
+                f"[{original_title}]({url})" if url else original_title
+            )
+            lines += ["", f"**{labels['original_title']}**: {original_title_link}"]
+
+        lines += ["", summary, "", source_line]
 
         if background:
             lines.append("")
